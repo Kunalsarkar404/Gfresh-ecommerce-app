@@ -1,0 +1,63 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+.log
+.log.*
+
+# Build directories
+/gfresh-frontend-client/build
+/gfresh-frontend-admin/build
+/gfresh-server/dist
+/gfresh-server/build
+
+# Next.js specific (if applicable)
+/gfresh-frontend-client/.next/
+/gfresh-frontend-admin/.next/
+
+# Cache and dependencies
+gfresh-frontend-client/.pnp
+gfresh-frontend-client/.pnp.js
+gfresh-frontend-admin/.pnp
+gfresh-frontend-admin/.pnp.js
+gfresh-server/.pnp
+gfresh-server/.pnp.js
+
+# Miscellaneous
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+
+# Ignore coverage reports
+coverage/
+*.lcov
+
+# Ignore dependencies and cache
+gfresh-frontend-client/node_modules/
+gfresh-frontend-client/.cache/
+gfresh-frontend-admin/node_modules/
+gfresh-frontend-admin/.cache/
+gfresh-server/node_modules/
+gfresh-server/.cache/
+
