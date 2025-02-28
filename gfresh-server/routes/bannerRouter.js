@@ -1,17 +1,16 @@
 const express = require('express')
-const CartRouter = express.Router()
+const router = express.Router()
 const upload = require('../middlewares/image-uploader.js');
-const createbanner = require('../controllers/banner/createbanner');
-const bannerlist = require('../controllers/banner/bannerlist.js');
-const bannersingle = require('../controllers/banner/bannersingle.js');
-const deletebanner = require('../controllers/banner/deletebanner.js');
-const updatebanner = require('../controllers/banner/updatebanner.js');
+const bannerlist = require('../Controllers/banner/bannerlist.js');
+const bannersingle = require('../Controllers/banner/bannersingle.js');
+const deletebanner = require('../Controllers/banner/deletebanner.js');
+const updatebanner = require('../Controllers/banner/updatebanner.js');
+const createbanner = require('../controllers/banner/createbanner.js');
 
-CartRouter.post('/', upload.single('banner'), createbanner);
-CartRouter.patch('/:id', upload.single('banner'), updatebanner);
-CartRouter.get('/',bannerlist);
-CartRouter.get('/:id',bannersingle);
-CartRouter.delete('/:id',deletebanner);
-CartRouter.patch('/:id',upload.fields('/:id'), upload.single('banner'), updatebanner);
+router.post('/',upload.single("banner"), createbanner);
+router.get('/',bannerlist);
+router.get('/:id',bannersingle);
+router.delete('/:id',deletebanner);
+router.patch('/:id',upload.single("banner"),updatebanner);
 
-module.exports = CartRouter
+module.exports = router

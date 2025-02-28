@@ -115,9 +115,7 @@ const Addbrandform = () => {
                   </div>
                 </div>
               </div>
-            
-
-
+          
               <div className="col-12 pt-3">
                 <div className="row">
                   <div className="col-lg-12">

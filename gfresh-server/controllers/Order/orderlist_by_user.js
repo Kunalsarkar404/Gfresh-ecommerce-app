@@ -1,18 +1,13 @@
 const Order = require("../../Models/order");
 const Cart = require("../../Models/cart");
 
-/**
- * Retrieves and formats the order list for a specific user
- * Includes calculation of total items per order from cart data
- */
 const orderlistbyuser = async (req, res) => {
   try {
     const user_id = req.user.id;
     const orderlist = await Order.find({ user_id });
 
-    // Return early if no orders found
     if (!orderlist || orderlist.length === 0) {
-      return res.status(404).json({ status: 0, message: "No Orders Found" });
+      return res.status(200).json({ status: 0, message: "No Orders Found", orderlist: [] });
     }
 
     // Transform orders and calculate total items from cart for each order

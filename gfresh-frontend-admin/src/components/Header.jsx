@@ -20,7 +20,6 @@ import { useContactlistlatestQuery } from "../store/api/webinfoapi";
 const Header = () => {
   const nvg = useNavigate();
   const userinfo = gettoken();
-  console.log("this user info", userinfo)
   const logoutevt = async () => {
     removeToken();
     nvg("/");
@@ -28,12 +27,6 @@ const Header = () => {
   const sshh = getsoh();
 
   const { data: userData, isLoading } = useContactlistlatestQuery();
-
-
-  console.log("dkdkdkdkkc", userData)
-
-
-
 
   return (
     userinfo ? <div

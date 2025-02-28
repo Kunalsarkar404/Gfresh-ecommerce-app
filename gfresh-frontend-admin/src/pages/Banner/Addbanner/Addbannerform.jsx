@@ -7,252 +7,189 @@ import img3 from "../../../assets/selectbanner.webp";
 import { Bannervalidation } from "../Validation/Bannervalidation";
 import { usePostBannerMutation } from "../../../store/api/bannerapi";
 
-const Addbannerform = () => {
+const AddBannerForm = () => {
   const imageInputRef = useRef(null);
-  const nvg = useNavigate();
+  const navigate = useNavigate();
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const config = {
-    height: "300px",
-  };
+  const [postBanner] = usePostBannerMutation();
 
-  // create category api start here
-  const [postbanner] = usePostBannerMutation();
+  const config = { height: "300px" };
 
-  const BannerForm = async (value) => {
+  const handleFormSubmit = async (values, { setSubmitting }) => {
     try {
-      const response = await postbanner(value);
-      if (!response.error) {
-        if (response.data.status === "successfull") {
-          nvg("/bannerlist/1");
-          window.location.reload();
-        } else {
-          console.error("Submission failed:", response.data.message);
-        }
+      setUploading(true);
+      setError(null);
+      
+      const formData = new FormData();
+      formData.append("banner_name", values.banner_name);
+      formData.append("banner_alt", values.banner_alt);
+      formData.append("banner_link", values.banner_link || "");
+      formData.append("status", values.status);
+      formData.append("banner_type", values.banner_type);
+      formData.append("description", values.description);
+      formData.append("imageType", "banner");
+      
+      if (values.banner) {
+        formData.append("banner", values.banner);
+      }
+
+      const response = await postBanner(formData).unwrap();
+      
+      if (response?.status === "successful") {
+        navigate("/bannerlist/1");
       } else {
-        console.error("Error in response:", response.error);
+        setError(response?.message || "Failed to save banner");
       }
     } catch (error) {
       console.error("Error during submission:", error);
+      setError(error.message || "An error occurred during upload");
+    } finally {
+      setUploading(false);
+      setSubmitting(false);
     }
   };
-  // create category api end here
 
   return (
-    <div className="container-fuild pb-4 pt-3 px-2 bg-white">
+    <div className="container-fluid pb-4 pt-3 px-2 bg-white">
+      {error && (
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
+      
       <Formik
         initialValues={{
           banner_name: "",
           banner_alt: "",
           banner_type: "",
+          banner_link: "",
           description: "",
           status: "",
           banner: null,
         }}
         validationSchema={Bannervalidation}
-        onSubmit={(values) => {
-          const formdata = new FormData();
-          formdata.append("banner_name", values.banner_name);
-          formdata.append("banner_alt", values.banner_alt);
-          formdata.append("description", values.description);
-          formdata.append("status", values.status);
-          formdata.append("banner_type", values.banner_type);
-          formdata.append("banner", values.banner);
-          BannerForm(formdata);
-        }}
+        onSubmit={handleFormSubmit}
       >
-        {({ values, errors, handleSubmit, touched, setFieldValue }) => (
-          <Form autoComplete="off" onSubmit={handleSubmit}>
+        {({ values, errors, touched, setFieldValue, isSubmitting }) => (
+          <Form autoComplete="off">
             <div
-              className="row bg-white pb-4 round"
-              style={{
-                border: "1px solid #E0E0E0",
-                margin: "10px 0px",
-                borderRadius: "3px",
-                position: "relative",
-              }}
+              className="row bg-white pb-4 rounded"
+              style={{ border: "1px solid #E0E0E0", margin: "10px 0px", position: "relative" }}
             >
+              {/* Banner Name */}
               <div className="col-md-6 px-2 pt-4">
-                <div className="row">
-                  <div className="col-lg-4">
-                    <label htmlFor="" className="form-label">
-                      Banner Name <span style={{ color: "red" }}>*</span>
-                    </label>
-                  </div>
-                  <div className="col-lg-8">
-                    <Field
-                      type="text"
-                      name="banner_name"
-                      className="form-control"
-                      placeholder="Banner Name"
-                      value={values.banner_name}
-                    />
-                  </div>
-                  <div className="offset-lg-4 col-lg-8">
-                    {errors.banner_name && touched.banner_name ? (
-                      <p style={{ color: "red" }}>{errors.banner_name}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-6 px-2 pt-4">
-                <div className="row">
-                  <div className="col-lg-4">
-                    <label htmlFor="" className="form-label">
-                      Banner alt <span style={{ color: "red" }}>*</span>
-                    </label>
-                  </div>
-                  <div className="col-lg-8">
-                    <Field
-                      name="banner_alt"
-                      type="text"
-                      className="form-control"
-                      placeholder="Banner Alt"
-                      value={values.banner_alt}
-                    />
-                  </div>
-                  <div className="offset-lg-4 col-lg-8">
-                    {errors.banner_alt && touched.banner_alt ? (
-                      <p style={{ color: "red" }}>{errors.banner_alt}</p>
-                    ) : null}
-                  </div>
-                </div>
+                <label className="form-label">Banner Name <span className="text-danger">*</span></label>
+                <Field type="text" name="banner_name" className="form-control" placeholder="Banner Name" />
+                {errors.banner_name && touched.banner_name && <p className="text-danger">{errors.banner_name}</p>}
               </div>
 
-              <div className="col-md-6 px-2 pt-3">
-                <div className="row">
-                  <div className="col-lg-4">
-                    <label htmlFor="" className="form-label">
-                      Banner Status <span style={{ color: "red" }}>*</span>
-                    </label>
-                  </div>
-                  <div className="col-lg-8">
-                    <Field as="select" name="status" className="form-select">
-                      <option value="" disabled>
-                        Select Status
-                      </option>
-                      <option value="Active">Active</option>
-                      <option value="Inactive">Inactive</option>
-                    </Field>
-                  </div>
-                  <div className="offset-lg-4 col-lg-8">
-                    {errors.status && touched.status ? (
-                      <p style={{ color: "red" }}>{errors.status}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-6 px-2 pt-3">
-                <div className="row">
-                  <div className="col-lg-4">
-                    <label htmlFor="" className="form-label">
-                      Banner Type<span style={{ color: "red" }}>*</span>
-                    </label>
-                  </div>
-                  <div className="col-lg-8">
-                    <Field as="select" name="banner_type" className="form-select">
-                      <option value="" disabled>
-                        Select Type
-                      </option>
-                      <option value="Banner">Banner</option>
-                      <option value="Slider">Slider</option>
-                    </Field>
-                  </div>
-                  <div className="offset-lg-4 col-lg-8">
-                    {errors.banner_type && touched.banner_type ? (
-                      <p style={{ color: "red" }}>{errors.banner_type}</p>
-                    ) : null}
-                  </div>
-                </div>
+              {/* Banner Alt */}
+              <div className="col-md-6 px-2 pt-4">
+                <label className="form-label">Banner Alt <span className="text-danger">*</span></label>
+                <Field type="text" name="banner_alt" className="form-control" placeholder="Banner Alt" />
+                {errors.banner_alt && touched.banner_alt && <p className="text-danger">{errors.banner_alt}</p>}
               </div>
 
+              {/* Banner Link */}
+              <div className="col-md-6 px-2 pt-3">
+                <label className="form-label">Banner Link</label>
+                <Field type="text" name="banner_link" className="form-control" placeholder="Enter Banner Link" />
+              </div>
+
+              {/* Banner Type */}
+              <div className="col-md-6 px-2 pt-3">
+                <label className="form-label">Banner Type <span className="text-danger">*</span></label>
+                <Field as="select" name="banner_type" className="form-select">
+                  <option value="">Select Type</option>
+                  <option value="Banner">Banner</option>
+                  <option value="Slider">Slider</option>
+                </Field>
+                {errors.banner_type && touched.banner_type && <p className="text-danger">{errors.banner_type}</p>}
+              </div>
+
+              {/* Status */}
+              <div className="col-md-6 px-2 pt-3">
+                <label className="form-label">Status <span className="text-danger">*</span></label>
+                <Field as="select" name="status" className="form-select">
+                  <option value="">Select Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </Field>
+                {errors.status && touched.status && <p className="text-danger">{errors.status}</p>}
+              </div>
+
+              {/* Image Upload */}
               <div className="col-12 pt-3">
-                <div className="row">
-                  <div className="col-lg-12">
-                    <label htmlFor="" className="form-label ">
-                      Image <span style={{ color: "red" }}>*</span>{" "}
-                    </label>
-                  </div>
-                  <div className="col-12">
-                    <div className="border d-flex justify-content-center">
-                      <button
-                        type="button"
-                        style={{
-                          border: "none",
-                          outline: "none",
-                        }}
-                      >
-                        <input
-                          type="file"
-                          name="banner"
-                          style={{ display: "none" }}
-                          ref={imageInputRef}
-                          accept="image/*"
-                          onChange={(event) => {
-                            setFieldValue(
-                              "banner",
-                              event.currentTarget.files[0]
-                            );
-                          }}
-                        />
-                        <img
-                          src={
-                            values.banner == null
-                              ? img3
-                              : URL.createObjectURL(values.banner)
-                          }
-                          alt="zxcvbnm"
-                          width="100%"
-                          height="200px"
-                          onClick={() => {
-                            imageInputRef.current.click();
-                          }}
-                          style={{ cursor: "pointer" }}
-                        />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="col-lg-12">
-                    {errors.banner && touched.banner ? (
-                      <p style={{ color: "red" }}>{errors.banner}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-12 px-2 pt-3">
-                <div className="row">
-                  <div className="col-lg-12">
-                    <label htmlFor="" className="form-label ">
-                      Banner Description{" "}
-                      <span style={{ color: "red" }}>*</span>{" "}
-                    </label>
-                  </div>
-                  <div className="col-lg-12">
-                    <JoditEditor
-                      config={config}
-                      value={values.description}
-                      onChange={(content) => setFieldValue("description", content)}
+                <label className="form-label">Image <span className="text-danger">*</span></label>
+                <div className="border d-flex justify-content-center">
+                  <div style={{ position: "relative", width: "100%" }}>
+                    <input
+                      type="file"
+                      name="banner"
+                      style={{ display: "none" }}
+                      ref={imageInputRef}
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.currentTarget.files[0];
+                        if (file) {
+                          setFieldValue("banner", file);
+                        }
+                      }}
                     />
-                  </div>
-                  <div className="col-lg-12">
-                    {errors.description && touched.description ? (
-                      <p style={{ color: "red" }}>{errors.description}</p>
-                    ) : null}
+                    <img
+                      src={values.banner ? URL.createObjectURL(values.banner) : img3}
+                      alt="Banner Preview"
+                      width="100%"
+                      height="200px"
+                      onClick={() => imageInputRef.current.click()}
+                      style={{ cursor: "pointer" }}
+                    />
+                    {values.banner && (
+                      <div className="mt-2 text-center">
+                        <span>{values.banner.name}</span>
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-danger ms-2"
+                          onClick={() => setFieldValue("banner", null)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
+                {errors.banner && touched.banner && <p className="text-danger">{errors.banner}</p>}
               </div>
 
-              <div
-                className="col-12 py-5 px-4 d-flex justify-content-end"
-                style={{ gap: "4px" }}
-              >
-                <button className="btn4">Cancel</button>
-                <button
-                  type="submit"
-                  className="btn5"
-                  style={{ background: "#0e5da9" }}
+              {/* Description */}
+              <div className="col-12 px-2 pt-3">
+                <label className="form-label">Description <span className="text-danger">*</span></label>
+                <JoditEditor
+                  config={config}
+                  value={values.description}
+                  onChange={(content) => setFieldValue("description", content)}
+                />
+                {errors.description && touched.description && <p className="text-danger">{errors.description}</p>}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="col-12 py-5 px-4 d-flex justify-content-end" style={{ gap: "4px" }}>
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => navigate("/bannerlist/1")}
+                  disabled={uploading || isSubmitting}
                 >
-                  Save
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={uploading || isSubmitting}
+                >
+                  {uploading ? 'Uploading...' : 'Save'}
                 </button>
               </div>
             </div>
@@ -263,4 +200,4 @@ const Addbannerform = () => {
   );
 };
 
-export default Addbannerform;
+export default AddBannerForm;

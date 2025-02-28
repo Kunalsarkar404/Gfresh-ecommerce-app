@@ -3,14 +3,41 @@ import "owl.carousel/dist/assets/owl.carousel.css";
 import "owl.carousel/dist/assets/owl.theme.default.css";
 import Header from "../../components/Header/Header";
 import { useLocation, useNavigate } from "react-router-dom";
-import { removeToken } from "../../Localstorage/Store";
+import { gettoken, removeToken } from "../../Localstorage/Store";
 import AddressformComp from "./AddressformComp";
 import EditressformComp from "./EditressformComp";
 import { useGetUserInfoQuery, usePatchUserMutation } from "../../store/api/userapi";
 import { useDeleteAddressMutation, useGetUserAddressQuery } from "../../store/api/addressapi";
 import { useGetOrderByUserQuery } from "../../store/api/orderapi";
 export const Profile = () => {
-  const { data: userinfo, isLoading: userloading, refetch: refetchuserinfo } = useGetUserInfoQuery()
+  const token = gettoken();
+  const nvg = useNavigate();
+  const location = useLocation();
+  const logoutfunction = () => {
+    removeToken();
+    nvg('/')
+  }
+
+  useEffect(() => {
+    if (!token) {
+      nvg('/login');
+    }
+  }, [token, nvg]);
+
+  const { data: userinfo, isLoading: userloading, error: userError, refetch: refetchuserinfo } = useGetUserInfoQuery(undefined, {
+    skip: !token,
+    //ErrorHandler
+    onError: (error) => {
+      if (error?.status === 401) {
+        removeToken();
+        nvg('/login')
+      }
+    }
+  })
+  const { data: orderlist, isLoading: orderlistloading, error: orderError } = useGetOrderByUserQuery(undefined, { skip: !token })
+
+  const { data: addressdata, isLoading: addressloading, error: addressError, refetch: refetchaddress } = useGetUserAddressQuery(undefined, { skip: !token })
+
   const [patchuser] = usePatchUserMutation()
   const [dltaddress] = useDeleteAddressMutation()
 
@@ -19,13 +46,7 @@ export const Profile = () => {
   const [editmode, seteditmode] = useState(false)
   const [filter, setfilter] = useState(true)
   const [loading, setloading] = useState(false)
-  const currentwdith = window.innerWidth;
-  const nvg = useNavigate()
-  const location = useLocation();
-  const logoutfunction = () => {
-    removeToken();
-    nvg('/')
-  }
+  const [currentWidth, setCurrentWidth] = useState(window.innerWidth);
 
   const [getsingleaddress, setgetsingleaddress] = useState({})
   const [createaddressstatus, setcreateaddressstatus] = useState(false)
@@ -37,17 +58,46 @@ export const Profile = () => {
   const [dob, setdob] = useState("")
   const [delid, setdelid] = useState(0)
 
+  const [errortrue, seterrortrue] = useState(false)
+  const [fnameerror, setfnameerror] = useState('')
+  const [lnameerror, setlnameerror] = useState('')
+  const [emailerror, setemailerror] = useState('')
+  const [mobileeror, setmobileeror] = useState('')
 
   useEffect(() => {
-    if (userloading === false) {
-      setfname(userinfo.data.first_name)
-      setlname(userinfo.data.last_name)
-      setemail(userinfo.data.email)
-      setmobileno(userinfo.data.mobile)
-      const userdob = new Date(userinfo.data.createdAt)
-      setdob(userdob.toISOString().split('T')[0])
+    const handleResize = () => setCurrentWidth(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!userloading && userinfo?.data) {
+      setfname(userinfo.data.first_name);
+      setlname(userinfo.data.last_name);
+      setemail(userinfo.data.email);
+      setmobileno(userinfo.data.mobile);
+      const userdob = new Date(userinfo.data.createdAt);
+      setdob(userdob.toISOString().split("T")[0]);
     }
-  }, [userinfo, userloading, currentwdith, location.state._id])
+  }, [userinfo, userloading]);
+
+  useEffect(() => {
+    if (location.state && location.state.id) {
+      if (location.state.id === 1) {
+        setowl("tab-1");
+      } else if (location.state.id === 2) {
+        setowl("tab-2");
+      } else if (location.state.id === 3) {
+        setowl("tab-3");
+      } else {
+        setowl("tab-4");
+      }
+    } else {
+      setowl("tab-1");
+    }
+
+    setfilter(currentWidth >= 730);
+  }, [location.state, currentWidth]);
 
   const opencreateform = () => {
     seteditmode(false);
@@ -71,96 +121,92 @@ export const Profile = () => {
     }, 500);
   }
 
-
-
-
-  const [errortrue, seterrortrue] = useState(false)
-  const [fnameerror, setfnameerror] = useState('')
-  const [lnameerror, setlnameerror] = useState('')
-  const [emailerror, setemailerror] = useState('')
-  const [mobileeror, setmobileeror] = useState('')
   //  edit user api start here 
   const edituser = async () => {
     if (fname === "" || email === "" || lname === "" || mobileno === "") {
       seterrortrue(true)
       if (fname === "") {
-        setfnameerror('Please Enter First Name')
-
+        setfnameerror('Please Enter First Name');
       }
       if (lname === "") {
-        setlnameerror('Please Enter Last Name')
+        setlnameerror('Please Enter Last Name');
       }
-
       if (email === "") {
-        setemailerror('Please Enter Last Name')
+        setemailerror('Please Enter Email');
       }
-
       if (mobileno === "") {
-        setmobileeror('Please Enter Last Name')
+        setmobileeror('Please Enter Mobile Number');
       }
-
     } else {
       const formdata = {
         "email": email,
         "first_name": fname,
         "last_name": lname,
         "mobile_no": mobileno,
-        "dob": dob
+        "dob": dob,
+        "id": userinfo?.data?.id
       }
 
       setloading(true);
-      const response = await patchuser(formdata);
-      refetchuserinfo()
-      setowl("tab-1");
-
-
+      try {
+        const response = await patchuser(formdata);
+        refetchuserinfo();
+        setowl("tab-1");
+      } catch (error) {
+        console.error("Error updating user:", error);
+      } finally {
+        setloading(false);
+      }
     }
   };
 
-  const { data: orderlist, isLoading: orderlistloading } = useGetOrderByUserQuery()
-  console.log("order lst", orderlist)
-  const { data: addressdata, isLoading: addressloading, refetch: refetchaddress } = useGetUserAddressQuery()
   const deleteaddress = async () => {
-    const res = await dltaddress(delid);
-    if (res.data) {
-      refetchaddress()
-    }
-  }
-  useEffect(() => {
-    if (location.state.id == 1) {
-      setowl("tab-1");
-    } else {
-      if (location.state.id == 2) {
-        setowl("tab-2");
-      } else {
-        if (location.state.id == 3) {
-          setowl("tab-3");
-        } else {
-          setowl("tab-4");
-        }
+    try {
+      const res = await dltaddress(delid);
+      if (res.data) {
+        refetchaddress();
       }
+    } catch (error) {
+      console.error("Error deleting address:", error);
     }
+  };
 
-    if (currentwdith < 730) {
-      setfilter(false)
-    } else {
-      setfilter(true)
-    }
-  }, [])
+  if (!token) {
+    return null;
+  }
 
   if (userloading || orderlistloading || addressloading) {
-    return <div>Loading...</div>;
+    return <div className="d-flex justify-content-center align-items-center" style={{ height: "100vh" }}>
+      <div className="spinner-border" role="status">
+        <span className="visually-hidden">Loading...</span>
+      </div>
+    </div>;
   }
 
-  if (!userinfo || !orderlist || !addressdata) {
-    console.error("Error fetching data:", userinfo || orderlist || addressdata);
-    return <div>Error loading data. Please try again later.</div>;
+  // Error handling
+  const apiError = userError || addressError;
+  if (apiError) {
+    // Check if 401 error - handle auth issues
+    if (apiError.status === 401) {
+      // Cleanly handle authentication failure
+      removeToken();
+      // We'll redirect in the useEffect above
+      return null;
+    }
+
+    return <div className="alert alert-danger">
+      Error loading data. Please try again later or contact support.
+    </div>;
+  }
+
+  // Safety check for required data
+  if (!userinfo?.data) {
+    return <div className="alert alert-warning">User information not available.</div>;
   }
 
   return (
     <div>
       <Header />
-
       <div>
         {/* breadcrumb start */}
         <div className="breadcrumb-main marginfromtop" style={{ backgroundColor: "#f9f9f9" }}>
@@ -172,7 +218,7 @@ export const Profile = () => {
                     <ul>
                       <li><a href="/">home</a></li>
                       <li><i className="fa fa-angle-double-right" /></li>
-                      <li><a href="javascript:void(0)">{owl == "tab-1" ? "Profile" : owl == "tab-2" ? "Order History" : owl == "tab-3" ? "Addresses List" : owl == "tab-4" ? "Order List" : owl == "tab-5" ? "Edit Profile" : ""}</a></li>
+                      <li><a href="javascript:void(0)">{owl === "tab-1" ? "Profile" : owl === "tab-2" ? "Order History" : owl === "tab-3" ? "Addresses List" : owl === "tab-4" ? "Order List" : owl === "tab-5" ? "Edit Profile" : ""}</a></li>
                     </ul>
                   </div>
                 </div>
@@ -180,6 +226,7 @@ export const Profile = () => {
             </div>
           </div>
         </div>
+
         {/* breadcrumb End */}
         <section className="section-big-pt-space pb-2" style={{ backgroundColor: "#f9f9f9" }}>
           <div className="col-lg-12 col-sm-12 col-xs-12 mt-lg-3  mb-5">
@@ -189,45 +236,34 @@ export const Profile = () => {
                 <section className="tab-product-main-tab">
                   <div className="tab2-product d-flex justify-content-center main-tab2 newscroll">
                     <ul className="abc justify-content-center">
-                      <li className={owl == "tab-1" ? "current" : ""}>
-                        <a
-                          href="javascript:void(0)"
-                          className="size21 extradesign"
-                          onClick={() => setowl("tab-1")}
-                        >
-                          <img src="./images/icon/11.png" className="sizeimg1" alt="404" /> &nbsp; Profile
-                        </a>
+                      <li className={owl === "tab-1" ? "current" : ""}>
+                        <button className="size21 extradesign" onClick={() => setowl("tab-1")}>
+                          <img src="./images/icon/11.png" className="sizeimg1" alt="Profile Icon" /> &nbsp; Profile
+                        </button>
                       </li>
-                      <li className={owl == "tab-3" ? "current" : ""}>
-                        <a
-                          href="javascript:void(0)"
-                          className="size22"
-                          onClick={() => setowl("tab-3")}
-                        >
-                          {" "}
-                          <img src="./images/icon/14.png" className="sizeimg2" alt="404" /> &nbsp;
-                          Addresses {currentwdith > 400 ? "List" : ''}
-                        </a>
+
+                      <li className={owl === "tab-3" ? "current" : ""}>
+                        <button className="size22" onClick={() => setowl("tab-3")}>
+                          <img src="./images/icon/14.png" className="sizeimg2" alt="Addresses Icon" /> &nbsp;
+                          Addresses {currentWidth > 400 ? "List" : ''}
+                        </button>
                       </li>
-                      <li className={owl == "tab-4" ? "current" : ""}>
-                        <a
-                          href="javascript:void(0)"
-                          className="size23"
-                          onClick={() => setowl("tab-4")}
-                        >
-                          <img src="./images/icon/13.png" className="sizeimg3" alt="404" /> &nbsp;
-                          Order   {currentwdith > 400 ? "List" : ''}
-                        </a>
+
+                      <li className={owl === "tab-4" ? "current" : ""}>
+                        <button className="size23" onClick={() => setowl("tab-4")}>
+                          <img src="./images/icon/13.png" className="sizeimg3" alt="Order Icon" /> &nbsp;
+                          Order {currentWidth > 400 ? "List" : ''}
+                        </button>
                       </li>
-                      {/* <li className={owl == 'tab-5' ? 'current' : ''} ><a href='javascript:void(0)' onClick={() => setowl('tab-5')}>medicine</a></li> */}
                     </ul>
+
                   </div>
                 </section>
 
                 <section className="tab-product-main-tab">
                   <div className="row mt-5">
                     {/* profile page start here  */}
-                    {userloading == true ? '' : <div id="tab-1" style={{ display: owl == 'tab-1' ? 'block' : 'none' }} className={owl == 'tab-1' ? "tab-content active default product-block3" : "tab-content product-block3"}>
+                    {userloading === true ? '' : <div id="tab-1" style={{ display: owl === 'tab-1' ? 'block' : 'none' }} className={owl === 'tab-1' ? "tab-content active default product-block3" : "tab-content product-block3"}>
                       <div className="row d-flex justify-content-center">
 
                         <div className="col-md-10">
@@ -283,17 +319,12 @@ export const Profile = () => {
                                   />
                                 </div>
                               </div></div>
-
-
-
                           </div>
                         </div>
                       </div>
                     </div>}
 
-
-
-                    <div id="tab-5" style={{ display: owl == 'tab-5' ? 'block' : 'none' }} className={owl == 'tab-5' ? "tab-content active default product-block3" : "tab-content product-block3"}>
+                    <div id="tab-5" style={{ display: owl === 'tab-5' ? 'block' : 'none' }} className={owl === 'tab-5' ? "tab-content active default product-block3" : "tab-content product-block3"}>
                       <div className="row d-flex justify-content-center">
 
                         <div className="col-md-10">
@@ -321,7 +352,6 @@ export const Profile = () => {
                                       </p>
                                     ) : null}
                                   </div>
-                                  {/* <p style={{color:'#abb1b7'}}>Ajay</p> */}
                                 </div>
 
                                 <div className="form-group ">
@@ -425,8 +455,8 @@ export const Profile = () => {
                     {/* profile page start end  */}
 
 
-                    <div id="tab-3" style={{ display: owl == 'tab-3' ? 'block' : 'none' }} className={owl == 'tab-3' ? "tab-content active default product-block3" : "tab-content product-block3"}>
-                      {createaddressstatus == true ? <div className="col-12 px-4 d-flex"> <div className="col-12 col-offset-2 alert alert-success mt-2 ms-1" role="alert">
+                    <div id="tab-3" style={{ display: owl === 'tab-3' ? 'block' : 'none' }} className={owl === 'tab-3' ? "tab-content active default product-block3" : "tab-content product-block3"}>
+                      {createaddressstatus === true ? <div className="col-12 px-4 d-flex"> <div className="col-12 col-offset-2 alert alert-success mt-2 ms-1" role="alert">
                         <h5 style={{ padding: '0px', margin: "0px", color: "#0a3622" }}>
                           {createaddressmsg}
                         </h5>
@@ -435,13 +465,13 @@ export const Profile = () => {
                         <h4 className="acounttitle" style={{ color: '#059fe2', cursor: 'pointer' }} onClick={() => { opencreateform() }}>+ Add Address</h4></div>
                       <div className="row">
 
-                        {editmode == false ? <AddressformComp addaddress={addaddress} closefun={closeform} reload={refetchaddress} editmode={editmode} /> : <EditressformComp addaddress={addaddress} item={getsingleaddress} reload={refetchaddress} closefun={closeform} editmode={editmode} />}
+                        {editmode === false ? <AddressformComp addaddress={addaddress} closefun={closeform} reload={refetchaddress} editmode={editmode} /> : <EditressformComp addaddress={addaddress} item={getsingleaddress} reload={refetchaddress} closefun={closeform} editmode={editmode} />}
 
                         <div className="">
                           <div class="row details py-2 justify-content-center" >
 
                             {addressdata.data.map((item, index) => (
-                              <div class="col-lg-6" style={{ marginBottom: '9px' }}>
+                              <div key={item._id} class="col-lg-6" style={{ marginBottom: '9px' }}>
                                 <div class="card" style={{ padding: '0px 8px' }}>
                                   <div class="card-body">
                                     <h5 class="card-title acounttitle d-flex justify-content-between" style={{ textTransform: 'capitalize', paddingLeft: '9px' }}>
@@ -519,7 +549,7 @@ export const Profile = () => {
                       </div>
                     </div>
 
-                    <div id="tab-4" style={{ display: owl == 'tab-4' ? 'block' : 'none' }} className={owl == 'tab-4' ? "tab-content active default product-block3" : "tab-content product-block3"}>
+                    <div id="tab-4" style={{ display: owl === 'tab-4' ? 'block' : 'none' }} className={owl === 'tab-4' ? "tab-content active default product-block3" : "tab-content product-block3"}>
                       <div className="row d-flex justify-content-center">
 
                         <div className="col-10">
@@ -535,14 +565,14 @@ export const Profile = () => {
                             </thead>
                             <tbody>
                               {orderlist.orderlist.map((item, index) => (
-                                <tr>
+                                <tr key={item.order_id}>
                                   <td>{item.order_id}</td>
                                   <td> {new Date(item.order_date.split('Time')[0]).toLocaleDateString('en-GB')}</td>
                                   <td>Apparels : {item.totalItems} Item</td>
                                   <td>₹{item.grand_total_amount}</td>
                                   <td>
-                                    <p style={{ width: "118px" }}> <span><img src={item.order_status == "Pending" ? "./images/icon/success.png" : item.order_status == "Dilevered" ? "./images/icon/onway.png" : item.order_status == "Shipped" ? "./images/icon/delete.png" : "./images/icon/danger.png"} alt="404" /></span> &nbsp; {item.order_status} </p>
-                                    {/* <p style={{color:"#8F9091"}}>on May 04, 2022</p> */}
+                                    <p style={{ width: "118px" }}> <span><img src={item.order_status === "Pending" ? "./images/icon/success.png" : item.order_status === "Dilevered" ? "./images/icon/onway.png" : item.order_status === "Shipped" ? "./images/icon/delete.png" : "./images/icon/danger.png"} alt="404" /></span> &nbsp; {item.order_status} </p>
+
                                   </td>
                                 </tr>
                               ))}

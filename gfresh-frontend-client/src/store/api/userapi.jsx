@@ -1,16 +1,18 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { gettoken } from '../../Localstorage/Store';
 
 export const userApi = createApi({
   reducerPath: 'userApi',
   baseQuery: fetchBaseQuery({ 
     baseUrl: "http://localhost:8000/api/user", 
-    prepareHeaders: (headers, { getState }) => {
-      const token = localStorage.getItem('Oneuptoken'); // Retrieve the token from local storage
+    prepareHeaders: (headers) => {
+      const token = gettoken();
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
       return headers;
     },
+    
   }),
   endpoints: (builder) => ({
     getUserInfo: builder.query({
@@ -34,8 +36,8 @@ export const userApi = createApi({
         })
       }),
     patchUser: builder.mutation({
-        query: (data) => ({
-          url: `/`,
+        query: ({ id, ...data }) => ({
+          url: `/${id}`,
           method:'PATCH',
           body:data
         })
@@ -48,7 +50,7 @@ export const userApi = createApi({
     }),
     getOrderByUser: builder.query({
       query: () => ({
-        url: '/orders',
+        url: '/orderbyuser',
         method: 'GET'
       })
     }),

@@ -19,7 +19,8 @@ export const bannerApi = createApi({
         query: (data) => ({
           url: `banner`,
           method:'POST',
-          body:data
+          body:data,
+          formData: true
         })
       }),
     patchBanner: builder.mutation({

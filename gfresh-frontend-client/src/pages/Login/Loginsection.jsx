@@ -15,8 +15,10 @@ const Loginsection = () => {
   const handleLogin = async (values, { setFieldError }) => {
     try {
       const response = await loginUser(values);
+      console.log("Login response", response);
       if (response && response.data && response.data.status === "successful") {
         tokenstore(response.data.token);
+        console.log("Token stored", localStorage.getItem("Oneuptoken"));
         navigate("/home");
       } else {
         setClientLoginErrors(response?.error?.data?.message || "Login failed. Please try again.");
