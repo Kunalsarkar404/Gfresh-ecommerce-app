@@ -3,7 +3,7 @@ import Footer from "../../components/Footer";
 import "../../css/login.css";
 import Loginsection from "./Loginsection";
 import Registersection from "./Registersection";
-import GfreshLogo from "../../assests/gfresh-logo.png";
+import GfreshLogo from "../../assets/gfresh-logo.png";
 
 const Login = () => {
   const ctl = useRef(null);

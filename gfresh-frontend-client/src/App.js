@@ -33,6 +33,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Home />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/category/:id" element={<Category />} />
+        <Route path="/category/:id/:name" element={<Category />} />
+        <Route path="/category/:id/:name/:url" element={<Category />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
         <Route path="/cart" element={<Cart />} />
@@ -42,7 +45,6 @@ function App() {
         <Route path="/testproduct" element={<Testproduct />} />
         <Route path="/productdetails/:id" element={<Productdetails />} />
         <Route path="/productdetailstwo" element={<Productdetailstwo />} />
-        <Route path="/category/:id/:name/:url" element={<Category />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/addresslist" element={<Addresslist />} />
         <Route path="/order-history-detail" element={<OrderHistoryDetails />} />

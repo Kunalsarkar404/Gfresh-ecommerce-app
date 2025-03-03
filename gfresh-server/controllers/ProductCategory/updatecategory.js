@@ -3,6 +3,9 @@ const slugify = require("slugify");
 
 const updateCategory = async (req, res) => {
     try {
+        console.log("Request Body:", req.body);
+        console.log("Uploaded File:", req.file);
+
         const {
             category_name,
             category_url,
@@ -25,8 +28,9 @@ const updateCategory = async (req, res) => {
             parentcategory: parent_category || []
         };
 
-        if (req.files && req.files.category_image) {
-            categoryData.banner = req.files.category_image[0].filename;
+        // Only update the banner image if a new file was uploaded
+        if (req.file) {
+            categoryData.banner = req.file.path;
         }
 
         const updatedCategory = await Category.findByIdAndUpdate(
@@ -43,7 +47,8 @@ const updateCategory = async (req, res) => {
         }
 
         res.json({
-            status: "Successfully updated",
+            status: "successful",
+            message: "Category updated successfully",
             data: updatedCategory
         });
     } catch (err) {

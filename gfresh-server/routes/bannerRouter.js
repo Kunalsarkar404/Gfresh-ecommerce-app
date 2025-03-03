@@ -3,9 +3,9 @@ const router = express.Router()
 const upload = require('../middlewares/image-uploader.js');
 const bannerlist = require('../Controllers/banner/bannerlist.js');
 const bannersingle = require('../Controllers/banner/bannersingle.js');
-const deletebanner = require('../Controllers/banner/deletebanner.js');
-const updatebanner = require('../Controllers/banner/updatebanner.js');
 const createbanner = require('../controllers/banner/createbanner.js');
+const deletebanner = require('../controllers/banner/deletebanner.js');
+const updatebanner = require('../controllers/banner/updatebanner.js');
 
 router.post('/',upload.single("banner"), createbanner);
 router.get('/',bannerlist);

@@ -9,16 +9,18 @@ const deleteCategory = require('../controllers/ProductCategory/deletecategory.js
 const updateCategory = require('../controllers/ProductCategory/updatecategory.js');
 const getFrontendCategoryList = require('../controllers/ProductCategory/frontend_category.js');
 
-routercate.post('/', upload.fields([
-    { name: 'category_image', maxCount: 1 },
-]), createcategory);
+routercate.post('/', (req, res, next)=>{
+    req.body.imageType = 'category';
+    next();
+}, upload.single("category_image"), createcategory);
 routercate.get('/', categorylist);
 routercate.get('/levelone', categorylistlevelone);
 routercate.get('/:id', categorysingle);
 routercate.get('/frontendcategorylist', getFrontendCategoryList);
 routercate.delete('/:id', deleteCategory);
-routercate.patch('/:id', upload.fields([
-    { name: 'category_image', maxCount: 1 },
-]), updateCategory);
+routercate.patch('/:id', (req, res, next) => {
+    req.body.imageType = 'category';
+    next();
+  }, upload.single('category_image'), updateCategory);
 
 module.exports = routercate

@@ -11,52 +11,57 @@ import {
 } from "../../../store/api/categoryapi";
 import { useGetSingleCategoryQuery } from "../../../store/api/categoryapi";
 import { useGetAllAttributeQuery } from "../../../store/api/attributeapi";
+
 const Editcategoryform = ({ id }) => {
   const { data, isLoading } = useGetSingleCategoryQuery(id);
   const [apiresponse, setapiresponse] = useState({});
   const imageInputRef = useRef(null);
-  const nvg = useNavigate();
+  const navigate = useNavigate();
 
-  let getlevelonecategory = useGetLevelOneCategoryQuery();
+  const { data: levelOneCategoryData } = useGetLevelOneCategoryQuery();
   const { data: attributeData } = useGetAllAttributeQuery();
 
   const config = {
     height: "300px",
   };
 
-  // create category api start here
-  const [patchcategory, categoryresponse] = usePatchCategoryMutation();
+  const [patchcategory] = usePatchCategoryMutation();
 
   const CategoryForm = async (value) => {
     try {
       const response = await patchcategory({ data: value, id: id });
+      console.log("Update response:", response);
+
       if (!response.error) {
-        if (response.data.status == "successfully update") {
-          nvg("/categorylist/2");
+        if (response.data?.status === "successful") {
+          navigate("/categorylist/2");
           window.location.reload();
         }
       } else {
-        setapiresponse(response.error.error);
+        setapiresponse(response.error.data?.error || {});
       }
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error updating category:", error);
+    }
   };
-  // create category api end here
-  return isLoading == true ? (
-    ""
-  ) : (
+
+  if (isLoading) {
+    return <div>Loading category data...</div>;
+  }
+
+  return (
     <div className="container-fuild pb-4 pt-3 px-2 bg-white">
       <Formik
         initialValues={{
-          category_name: data.data.name,
-          category_url: data.slug,
-          meta_keywords: data.data.meta_keywords,
-          meta_title: data.data.metatitle,
-          meta_description: data.data.metadesc,
-          editor: data.data.desc,
-          parent_category: data.data.parentcategory,
-          status: data.data.status,
-          category_image: data.data.banner,
-          // attribute:data.data.attribute,
+          category_name: data?.data?.name || "",
+          category_url: data?.slug || "",
+          meta_keywords: data?.data?.meta_keywords || "",
+          meta_title: data?.data?.metatitle || "",
+          meta_description: data?.data?.metadesc || "",
+          editor: data?.data?.desc || "",
+          parent_category: data?.data?.parentcategory || [],
+          status: data?.data?.status || "",
+          category_image: data?.data?.banner || null,
         }}
         validationSchema={Categoryvalidationedit}
         onSubmit={(values) => {
@@ -67,12 +72,19 @@ const Editcategoryform = ({ id }) => {
           formdata.append("meta_title", values.meta_title);
           formdata.append("meta_description", values.meta_description);
           formdata.append("editor", values.editor);
-          formdata.append("parent_category", values.parent_category);
+
+          // Handle parent category
+          if (values.parent_category && values.parent_category.length > 0) {
+            formdata.append("parent_category", JSON.stringify(values.parent_category));
+          }
+
           formdata.append("status", values.status);
-          // formdata.append("attribute", values.attribute);
-          if (values.category_image !== data.data.banner) {
+
+          // Only append category_image if it's a new file (not the existing banner string)
+          if (values.category_image && typeof values.category_image !== 'string') {
             formdata.append("category_image", values.category_image);
           }
+
           CategoryForm(formdata);
         }}
       >
@@ -106,12 +118,9 @@ const Editcategoryform = ({ id }) => {
                   <div className="offset-lg-4 col-lg-8">
                     {apiresponse.name ? (
                       <p style={{ color: "red" }}>
-                        {" "}
-                        {apiresponse.name.message}{" "}
+                        {apiresponse.name.message}
                       </p>
-                    ) : (
-                      ""
-                    )}
+                    ) : null}
                     {errors.category_name && touched.category_name ? (
                       <p style={{ color: "red" }}>{errors.category_name}</p>
                     ) : null}
@@ -137,12 +146,9 @@ const Editcategoryform = ({ id }) => {
                   <div className="offset-lg-4 col-lg-8">
                     {apiresponse.url ? (
                       <p style={{ color: "red" }}>
-                        {" "}
-                        {apiresponse.url.message}{" "}
+                        {apiresponse.url.message}
                       </p>
-                    ) : (
-                      ""
-                    )}
+                    ) : null}
 
                     {errors.category_url && touched.category_url ? (
                       <p style={{ color: "red" }}>{errors.category_url}</p>
@@ -212,6 +218,7 @@ const Editcategoryform = ({ id }) => {
                       type="text"
                       className="form-control"
                       placeholder="Meta Description"
+                      value={values.meta_description}
                     />
                   </div>
                   <div className="offset-lg-4 col-lg-8">
@@ -244,44 +251,7 @@ const Editcategoryform = ({ id }) => {
                   </div>
                 </div>
               </div>
-              {/* <div className="col-md-12 px-2 pt-3">
-                <div className="row">
-                  <div className="col-lg-2">
-                    <label htmlFor="" className="form-label ">
-                    Addattribute <span style={{ color: "red" }}>*</span>{" "}
-                    </label>
-                  </div>
-                  <div className="col-lg-10">
-                    {attributeData?.data ? (
-                      <Multiselect
-                        // isObject={false}
-                        selectedValues={attributeData?.data.filter(item => data.data.attribute.includes(item.attributeName))}
-                        options={attributeData?.data}
-                        onSelect={(selectedList) => {
-                          setFieldValue(
-                            "attribute",
-                            selectedList.map((item) => item.attributeName)
-                          );
-                        }}
-                        onRemove={(selectedList) => {
-                          setFieldValue(
-                            "attribute",
-                            selectedList.map((item) => item.attributeName)
-                          );
-                        }}
-                        displayValue="attributeName"
-                      />
-                    ) : (
-                      ""
-                    )}
-                  </div>
-                  <div className="offset-lg-2 col-lg-10">
-                    {errors.parent_category && touched.parent_category ? (
-                      <p style={{ color: "red" }}>{errors.parent_category}</p>
-                    ) : null}
-                  </div>
-                </div>
-              </div> */}
+
               <div className="col-md-12 px-2 pt-3">
                 <div className="row">
                   <div className="col-lg-2">
@@ -290,11 +260,10 @@ const Editcategoryform = ({ id }) => {
                     </label>
                   </div>
                   <div className="col-lg-10">
-                    {getlevelonecategory?.data?.data ? (
+                    {levelOneCategoryData?.data ? (
                       <Multiselect
-                        // isObject={false}
-                        selectedValues={data.parent}
-                        options={getlevelonecategory?.data?.data}
+                        selectedValues={data?.parent || []}
+                        options={levelOneCategoryData.data}
                         onSelect={(selectedList) => {
                           setFieldValue(
                             "parent_category",
@@ -304,13 +273,13 @@ const Editcategoryform = ({ id }) => {
                         onRemove={(selectedList) => {
                           setFieldValue(
                             "parent_category",
-                            selectedList.map((item) => item.id)
+                            selectedList.map((item) => item._id)
                           );
                         }}
                         displayValue="name"
                       />
                     ) : (
-                      ""
+                      <p>Loading categories...</p>
                     )}
                   </div>
                   <div className="offset-lg-2 col-lg-10">
@@ -352,11 +321,11 @@ const Editcategoryform = ({ id }) => {
                         />
                         <img
                           src={
-                            values.category_image == data.data.banner
-                              ? `http://localhost:8000/uploads/images/${data.data.banner}`
+                            typeof values.category_image === "string"
+                              ? values.category_image
                               : URL.createObjectURL(values.category_image)
                           }
-                          alt="zxcvbnm"
+                          alt="Category Banner"
                           width="100%"
                           height="200px"
                           onClick={() => {
@@ -364,6 +333,8 @@ const Editcategoryform = ({ id }) => {
                           }}
                           style={{ cursor: "pointer" }}
                         />
+
+
                       </button>
                     </div>
                   </div>
@@ -402,7 +373,13 @@ const Editcategoryform = ({ id }) => {
                 className="col-12 py-5 px-4 d-flex justify-content-end"
                 style={{ gap: "4px" }}
               >
-                <button className="btn4">Cancel</button>
+                <button
+                  type="button"
+                  className="btn4"
+                  onClick={() => navigate("/categorylist/2")}
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   className="btn5"
